@@ -1,5 +1,9 @@
 # Session Recall
 
+<p align="center">
+  <img src="./plugins/session-recall/assets/logo.png" alt="Session Recall logo" width="112" />
+</p>
+
 Find old Codex sessions from fuzzy memory.
 
 Session Recall indexes your local Codex session history and helps you find the conversation you only half remember. It is local-first: it reads session files from your own `~/.codex` directory and stores a local SQLite index under `~/.codex/session-recall/`.
