@@ -80,15 +80,15 @@ After installing, start a new Codex conversation so the new skill and MCP tools 
 Ask Codex:
 
 ```text
-Use Session Recall to find my old Aside browser conversation.
+Use Session Recall to find my old conversation about the login redirect bug.
 ```
 
 Session Recall can expand that into searches such as:
 
-- `Aside browser`
-- `Aside AI Browser`
-- `aside browser`
-- `Aside Discord`
+- `login redirect`
+- `redirect bug`
+- `authentication redirect`
+- `sign-in callback`
 
 Then it returns likely sessions and explains why each result matched.
 
@@ -138,4 +138,4 @@ Useful paths:
 
 ## Developer
 
-David Citro
+Davidyooo

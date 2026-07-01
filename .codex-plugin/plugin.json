@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Search and reopen local Codex sessions by remembered content, with query expansion and readable match reasons.",
   "author": {
-    "name": "David Citro"
+    "name": "Davidyooo"
   },
   "homepage": "https://github.com/Davidyooo/session-recall",
   "repository": "https://github.com/Davidyooo/session-recall",
@@ -19,7 +19,7 @@
     "displayName": "Session Recall",
     "shortDescription": "Find old Codex sessions by memory.",
     "longDescription": "Session Recall builds a local searchable index of Codex session history, expands vague queries with aliases and language variants, and returns matching sessions with snippets, metadata, confidence, and match reasons so you can jump back into the original conversation.",
-    "developerName": "David Citro",
+    "developerName": "Davidyooo",
     "category": "Productivity",
     "websiteURL": "https://github.com/Davidyooo/session-recall",
     "brandColor": "#38BDF8",
