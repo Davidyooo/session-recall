@@ -1,0 +1,33 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="152" y1="86" x2="878" y2="940" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111A22"/>
+      <stop offset="0.58" stop-color="#071016"/>
+      <stop offset="1" stop-color="#05070A"/>
+    </linearGradient>
+    <linearGradient id="thread" x1="212" y1="256" x2="810" y2="816" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8B5CF6"/>
+      <stop offset="0.34" stop-color="#38BDF8"/>
+      <stop offset="0.66" stop-color="#34D399"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+    <filter id="shadow" x="110" y="156" width="806" height="782" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="30" flood-color="#000000" flood-opacity="0.34"/>
+    </filter>
+  </defs>
+
+  <rect x="64" y="64" width="896" height="896" rx="220" fill="url(#bg)"/>
+  <rect x="66" y="66" width="892" height="892" rx="218" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="4"/>
+
+  <g filter="url(#shadow)">
+    <path
+      d="M226 632C298 372 558 254 706 370C828 466 780 638 616 638H414C314 638 254 710 286 790C342 930 602 912 734 710"
+      stroke="url(#thread)"
+      stroke-width="112"
+      stroke-linecap="round"
+      stroke-linejoin="round"/>
+    <circle cx="226" cy="632" r="48" fill="#F8FBFF"/>
+    <circle cx="616" cy="638" r="50" fill="#F8FBFF"/>
+    <circle cx="734" cy="710" r="52" fill="#FFBE3D"/>
+  </g>
+</svg>
