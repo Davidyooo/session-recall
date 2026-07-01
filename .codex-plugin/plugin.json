@@ -5,6 +5,15 @@
   "author": {
     "name": "David Citro"
   },
+  "homepage": "https://github.com/Davidyooo/session-recall",
+  "repository": "https://github.com/Davidyooo/session-recall",
+  "keywords": [
+    "codex",
+    "session-history",
+    "local-search",
+    "recall",
+    "productivity"
+  ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Session Recall",
@@ -12,6 +21,7 @@
     "longDescription": "Session Recall builds a local searchable index of Codex session history, expands vague queries with aliases and language variants, and returns matching sessions with snippets, metadata, confidence, and match reasons so you can jump back into the original conversation.",
     "developerName": "David Citro",
     "category": "Productivity",
+    "websiteURL": "https://github.com/Davidyooo/session-recall",
     "brandColor": "#38BDF8",
     "logo": "./assets/logo.png",
     "composerIcon": "./assets/icon.png",

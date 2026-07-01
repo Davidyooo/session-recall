@@ -1,21 +1,81 @@
 # Session Recall
 
 <p align="center">
-  <img src="./plugins/session-recall/assets/logo.png" alt="Session Recall logo" width="112" />
+  <img src="assets/logo.png" alt="Session Recall logo" width="112" />
 </p>
 
-Find old Codex sessions from fuzzy memory.
+Session Recall is a local Codex plugin for finding old conversations from fuzzy memory. It indexes your local Codex session history, expands vague searches with aliases and language variants, and returns readable matches with snippets, metadata, confidence, and match reasons.
 
-Session Recall indexes your local Codex session history and helps you find the conversation you only half remember. It is local-first: it reads session files from your own `~/.codex` directory and stores a local SQLite index under `~/.codex/session-recall/`.
+The plugin is local-first. It reads session files from your own `~/.codex` directory and stores a local SQLite index under `~/.codex/session-recall/`.
 
-## What It Does
+## Features
 
-- Searches local Codex session history by remembered content.
-- Expands vague searches with aliases, punctuation variants, and language variants.
-- Returns readable results with title, project, time, archived status, snippet, confidence, and why it matched.
-- Supports exact keyword search, fast expanded search, and deeper smart/hybrid fallback.
+- Search local Codex session history by remembered content.
+- Expand vague searches with aliases, punctuation variants, and language variants.
+- Return readable results with title, project, time, archived status, snippet, confidence, and why it matched.
+- Use fast keyword search by default, with smart and hybrid fallback modes for fuzzier memories.
+- Reopen or continue the original session from the returned thread metadata.
 
-## Example
+## Installation
+
+### Ask Codex To Install It
+
+Send the following message to Codex:
+
+```text
+Please install the Session Recall Codex plugin from https://github.com/Davidyooo/session-recall.git.
+Clone the repository into ~/plugins/session-recall, verify that .codex-plugin/plugin.json exists,
+add the plugin to the personal marketplace, run codex plugin marketplace add ~,
+then run codex plugin add session-recall@personal.
+After installing, validate the plugin and tell me whether I should start a new conversation to load the new skill and MCP tools.
+```
+
+### Manual Install
+
+Clone the plugin into the default location referenced by the Codex personal marketplace:
+
+```bash
+mkdir -p ~/plugins
+git clone https://github.com/Davidyooo/session-recall.git ~/plugins/session-recall
+cd ~/plugins/session-recall
+python3 -m py_compile scripts/session_recall_mcp.py
+```
+
+Make sure `~/.agents/plugins/marketplace.json` contains a Session Recall entry:
+
+```json
+{
+  "name": "personal",
+  "interface": {
+    "displayName": "Personal"
+  },
+  "plugins": [
+    {
+      "name": "session-recall",
+      "source": {
+        "source": "local",
+        "path": "./plugins/session-recall"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
+```
+
+Then register the personal marketplace and install the plugin:
+
+```bash
+codex plugin marketplace add ~
+codex plugin add session-recall@personal
+```
+
+After installing, start a new Codex conversation so the new skill and MCP tools are loaded cleanly.
+
+## Usage
 
 Ask Codex:
 
@@ -23,32 +83,14 @@ Ask Codex:
 Use Session Recall to find my old Aside browser conversation.
 ```
 
-The plugin can expand that into searches such as:
+Session Recall can expand that into searches such as:
 
 - `Aside browser`
 - `Aside AI Browser`
-- `aside 浏览器`
+- `aside browser`
 - `Aside Discord`
 
-Then it returns likely sessions and explains why each one matched.
-
-## Install From This Repo
-
-Clone the repo:
-
-```bash
-git clone https://github.com/<your-org>/session-recall-plugin.git
-cd session-recall-plugin
-```
-
-Add this repo as a Codex plugin marketplace:
-
-```bash
-codex plugin marketplace add "$PWD"
-codex plugin add session-recall@session-recall
-```
-
-Start a new Codex thread after installing so the skill and MCP tools are picked up.
+Then it returns likely sessions and explains why each result matched.
 
 ## Tools
 
@@ -59,7 +101,7 @@ Start a new Codex thread after installing so the skill and MCP tools are picked 
 
 ## Privacy
 
-This plugin does not upload your sessions. It reads local Codex session files and writes a local index to:
+Session Recall does not upload your sessions. It reads local Codex session files and writes a local index to:
 
 ```text
 ~/.codex/session-recall/index.sqlite
@@ -67,8 +109,33 @@ This plugin does not upload your sessions. It reads local Codex session files an
 
 Do not share that SQLite index or your local session files.
 
+## Local Development
+
+Run a quick syntax check:
+
+```bash
+python3 -m py_compile scripts/session_recall_mcp.py
+```
+
+The MCP server entry point is:
+
+```text
+scripts/session_recall_mcp.py
+```
+
+Useful paths:
+
+- `.codex-plugin/plugin.json`: plugin metadata shown in Codex.
+- `.mcp.json`: MCP server configuration.
+- `skills/session-recall/SKILL.md`: assistant-facing workflow instructions.
+- `assets/`: logo and icon files used by the plugin UI.
+
 ## Limits
 
-- This is not embedding/vector search.
+- This is not embedding or vector search.
 - Very fuzzy memories may still need a follow-up keyword.
-- It searches saved local sessions; it does not recover unsaved ephemeral chats.
+- It searches saved local Codex sessions; it does not recover unsaved ephemeral chats.
+
+## Developer
+
+David Citro
