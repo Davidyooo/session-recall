@@ -1,0 +1,26 @@
+{
+  "name": "session-recall",
+  "version": "0.1.0",
+  "description": "Search and reopen local Codex sessions by remembered content, with query expansion and readable match reasons.",
+  "author": {
+    "name": "David Citro"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Session Recall",
+    "shortDescription": "Find old Codex sessions by memory.",
+    "longDescription": "Session Recall builds a local searchable index of Codex session history, expands vague queries with aliases and language variants, and returns matching sessions with snippets, metadata, confidence, and match reasons so you can jump back into the original conversation.",
+    "developerName": "David Citro",
+    "category": "Productivity",
+    "capabilities": [
+      "Search",
+      "Local"
+    ],
+    "defaultPrompt": [
+      "Find the session about task search.",
+      "Search my session history for a phrase.",
+      "Find a session from vague memory."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

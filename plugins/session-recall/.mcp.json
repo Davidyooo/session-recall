@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "session_recall": {
+      "title": "Session Recall",
+      "description": "Search local sessions by remembered content and return links for going back to them.",
+      "cwd": ".",
+      "command": "python3",
+      "args": [
+        "./scripts/session_recall_mcp.py"
+      ]
+    }
+  }
+}
