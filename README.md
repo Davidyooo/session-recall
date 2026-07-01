@@ -135,7 +135,3 @@ Useful paths:
 - This is not embedding or vector search.
 - Very fuzzy memories may still need a follow-up keyword.
 - It searches saved local Codex sessions; it does not recover unsaved ephemeral chats.
-
-## Developer
-
-Davidyooo
