@@ -19,7 +19,7 @@ const ARCHIVED_ROOT = path.join(CODEX_HOME, "archived_sessions");
 const MAX_RECORD_TEXT = 6000;
 const MAX_SESSION_TEXT = 600000;
 const SERVER_NAME = "session-recall";
-const SERVER_VERSION = "0.3.2";
+const SERVER_VERSION = "0.3.3";
 const INDEX_REFRESH_TTL_MS = 60000;
 let lastIndexRefreshCheckMs = 0;
 
@@ -140,6 +140,10 @@ function statusZh(result) {
   return result.archived ? "已归档" : "当前";
 }
 
+function statusEn(result) {
+  return result.archived ? "Archived" : "Current";
+}
+
 function whyRelevantZh(result, query) {
   const title = cleanTitle(result.title || result.result_label || "", 80);
   const queryText = compactText(query || "", 40);
@@ -156,6 +160,22 @@ function whyRelevantZh(result, query) {
   return "这条 session 的标题或内容和你的搜索意图相关。";
 }
 
+function whyRelevantEn(result, query) {
+  const title = cleanTitle(result.title || result.result_label || "", 80);
+  const queryText = compactText(query || "", 40);
+  if (title && queryText) {
+    return `This session is about "${title}", which is relevant to "${queryText}".`;
+  }
+  const terms = (result.matched_terms || []).filter(Boolean).slice(0, 3);
+  if (terms.length) {
+    return `This session matched "${terms.join(", ")}", which is directly related to the search.`;
+  }
+  if (queryText) {
+    return `This session title or content is related to "${queryText}".`;
+  }
+  return "This session title or content appears related to the search intent.";
+}
+
 function renderSearchResultsMarkdownZh(results, query) {
   if (!results.length) {
     return "我没有找到相关的 session。";
@@ -167,6 +187,23 @@ function renderSearchResultsMarkdownZh(results, query) {
     lines.push(`   状态/项目：${statusZh(result)} · ${result.project || "未知项目"}`);
     lines.push(`   为什么相关：${whyRelevantZh(result, query)}`);
     lines.push(`   命中片段：“${quoteSnippet(result.snippet)}”`);
+    if (idx < results.length - 1) lines.push("");
+  });
+  return lines.join("\n");
+}
+
+function renderSearchResultsMarkdownEn(results, query) {
+  if (!results.length) {
+    return "I could not find a related session.";
+  }
+  const noun = results.length === 1 ? "session" : "sessions";
+  const lines = [`I found ${results.length} possibly related ${noun}. Click a title to open it.`, ""];
+  results.forEach((result, idx) => {
+    lines.push(`${idx + 1}. ${result.display_link}`);
+    lines.push(`   Date: ${dateOnly(result.updated_at)}`);
+    lines.push(`   Status/Project: ${statusEn(result)} · ${result.project || "Unknown project"}`);
+    lines.push(`   Why relevant: ${whyRelevantEn(result, query)}`);
+    lines.push(`   Matched snippet: "${quoteSnippet(result.snippet)}"`);
     if (idx < results.length - 1) lines.push("");
   });
   return lines.join("\n");
@@ -877,8 +914,9 @@ async function searchSessions({
     count: results.length,
     results,
     recommended_markdown_zh: renderSearchResultsMarkdownZh(results, query),
+    recommended_markdown_en: renderSearchResultsMarkdownEn(results, query),
     note:
-      "For Chinese answers, use recommended_markdown_zh as the fixed output template. Do not display raw thread_id, scores, rollout_path, or index-refresh status by default.",
+      "Use the fixed template in the user's language. For Chinese use recommended_markdown_zh; for English use recommended_markdown_en. Do not display raw thread_id, scores, rollout_path, or index-refresh status by default.",
   };
 }
 
@@ -954,6 +992,7 @@ async function searchManySessions({
     count: finalResults.length,
     results: finalResults,
     recommended_markdown_zh: renderSearchResultsMarkdownZh(recommendedResults, cleanQueries[0] || ""),
+    recommended_markdown_en: renderSearchResultsMarkdownEn(recommendedResults, cleanQueries[0] || ""),
     recommended_markdown_count: recommendedResults.length,
     note: "These are high-recall candidates. Codex should semantically rerank them against the user's original intent before answering, then use the same fixed result template. Do not display raw thread_id, scores, rollout_path, or index-refresh status by default.",
   };

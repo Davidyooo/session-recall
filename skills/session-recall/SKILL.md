@@ -41,7 +41,12 @@ This is not vector embedding search. Its quality depends on whether the local re
 
 Keep results compact. Default to about 5 matches unless the user asks for more. Do not dump full sessions into the answer. The main goal is fast recall and returning to the original session.
 
-For Chinese conversations, use the fixed template exactly. If the MCP response includes `recommended_markdown_zh`, use it as the output shape and only improve the `为什么相关` wording when you have a clearer semantic reason.
+Use the same language as the user's latest message. Do not hardcode Chinese.
+
+- For Chinese conversations, use `recommended_markdown_zh` when available.
+- For English conversations, use `recommended_markdown_en` when available.
+- For other languages, translate the labels while keeping the same fields and order.
+- Only improve the "why relevant" wording when you have a clearer semantic reason.
 
 ```md
 我找到了 <N> 条可能相关的 session。点击标题可以打开。
@@ -53,10 +58,21 @@ For Chinese conversations, use the fixed template exactly. If the MCP response i
    命中片段：“<snippet>”
 ```
 
+```md
+I found <N> possibly related sessions. Click a title to open it.
+
+1. [<title>](<open_url>)
+   Date: <YYYY-MM-DD>
+   Status/Project: <Current/Archived> · <project>
+   Why relevant: <one natural sentence>
+   Matched snippet: "<snippet>"
+```
+
 Rules:
 
 - Localize labels and action text to the user's current language.
 - In Chinese, use `已归档` only when the result says `archived: true`; otherwise use `当前`.
+- In English, use `Archived` only when the result says `archived: true`; otherwise use `Current`.
 - Use `display_link` when available. Otherwise use `match_summary`, `matched_fields`, `matched_terms`, `confidence`, `project`, `status`, and `open_url` to explain and link results.
 - If the title is very long, shorten it to a readable title, but keep the link target unchanged.
 - The `为什么相关` line should be one natural sentence, based on the original user intent and matched snippet. Do not use raw score language.

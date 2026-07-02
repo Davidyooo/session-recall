@@ -1,6 +1,6 @@
 {
   "name": "session-recall",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Search and reopen local Codex sessions by remembered content, with query expansion and readable match reasons.",
   "author": {
     "name": "Davidyooo"
