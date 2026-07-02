@@ -18,7 +18,7 @@ The plugin is local-first. It reads session files from your own `~/.codex` direc
 
 ## Installation
 
-Session Recall requires Node.js 18 or newer. It does not require Python.
+Session Recall requires Node.js 18 or newer. It does not require Python. Its MCP server uses the official Model Context Protocol TypeScript SDK over stdio.
 
 ### Ask Codex To Install It
 
@@ -27,6 +27,7 @@ Send the following message to Codex:
 ```text
 Please install the Session Recall Codex plugin from https://github.com/Davidyooo/session-recall.git.
 Clone the repository into ~/plugins/session-recall, verify that .codex-plugin/plugin.json exists,
+run npm install --omit=dev inside the plugin directory,
 add the plugin to my personal marketplace if needed,
 then run codex plugin add session-recall@personal.
 After installing, validate the plugin and tell me whether I should start a new conversation to load the new skill and MCP tools.
@@ -40,6 +41,7 @@ Clone the plugin into the default location referenced by the Codex personal mark
 mkdir -p ~/plugins
 git clone https://github.com/Davidyooo/session-recall.git ~/plugins/session-recall
 cd ~/plugins/session-recall
+npm install --omit=dev
 node --check mcp/server.mjs
 ```
 
@@ -143,12 +145,7 @@ node --version
 
 Session Recall requires Node.js 18 or newer.
 
-The plugin starts through `scripts/start-mcp.sh` and does not build the session index during MCP startup. If Codex still times out, make sure you installed the latest version and add this to your Codex config:
-
-```toml
-[mcp_servers.session_recall]
-startup_timeout_sec = 120
-```
+The plugin starts through `scripts/start-mcp.sh` and does not build the session index during MCP startup. If Codex still times out, make sure you installed the latest version and ran `npm install --omit=dev` inside the plugin directory.
 
 ## Limits
 

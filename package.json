@@ -1,6 +1,6 @@
 {
   "name": "session-recall",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Local Codex plugin for finding old sessions by remembered content.",
@@ -10,5 +10,9 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.25.76"
   }
 }

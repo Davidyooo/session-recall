@@ -5,6 +5,9 @@ import fsp from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import * as z from "zod/v4";
 
 const HOME = os.homedir();
 const CODEX_HOME = path.resolve(process.env.CODEX_HOME || path.join(HOME, ".codex"));
@@ -16,7 +19,7 @@ const ARCHIVED_ROOT = path.join(CODEX_HOME, "archived_sessions");
 const MAX_RECORD_TEXT = 6000;
 const MAX_SESSION_TEXT = 600000;
 const SERVER_NAME = "session-recall";
-const SERVER_VERSION = "0.2.0";
+const SERVER_VERSION = "0.3.0";
 const INDEX_REFRESH_TTL_MS = 60000;
 let lastIndexRefreshCheckMs = 0;
 
@@ -87,128 +90,6 @@ const FIELD_LABELS = {
   cwd: "workspace path",
   content: "session body",
 };
-
-const TOOLS = [
-  {
-    name: "refresh_index",
-    description: "Scan local session files and refresh the searchable index.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        force: {
-          type: "boolean",
-          description: "Reindex every session even if it appears unchanged.",
-          default: false,
-        },
-      },
-    },
-  },
-  {
-    name: "search_sessions",
-    description:
-      "Search local sessions by remembered content and return links for going back to the original session.",
-    inputSchema: {
-      type: "object",
-      required: ["query"],
-      properties: {
-        query: {
-          type: "string",
-          description: "Natural language, keyword, filename, project name, or phrase to search for.",
-        },
-        limit: {
-          type: "integer",
-          description: "Maximum results to return, from 1 to 50.",
-          default: 10,
-        },
-        include_archived: {
-          type: "boolean",
-          description: "Include archived sessions.",
-          default: true,
-        },
-        cwd_contains: {
-          type: "string",
-          description: "Optional path substring filter for the session workspace.",
-        },
-        mode: {
-          type: "string",
-          enum: ["keyword", "smart", "hybrid"],
-          description: "keyword is exact local search. smart is no-key local concept search. hybrid combines both.",
-          default: "keyword",
-        },
-      },
-    },
-  },
-  {
-    name: "search_many_sessions",
-    description: "Run multiple local query variants and merge high-recall session candidates for model reranking.",
-    inputSchema: {
-      type: "object",
-      required: ["queries"],
-      properties: {
-        queries: {
-          type: "array",
-          items: { type: "string" },
-          description: "Several query variants generated from the user's fuzzy memory.",
-        },
-        limit_per_query: {
-          type: "integer",
-          description: "Maximum results per query variant.",
-          default: 12,
-        },
-        final_limit: {
-          type: "integer",
-          description: "Maximum merged candidates to return for Codex to rerank.",
-          default: 30,
-        },
-        include_archived: {
-          type: "boolean",
-          description: "Include archived sessions.",
-          default: true,
-        },
-        cwd_contains: {
-          type: "string",
-          description: "Optional path substring filter for the session workspace.",
-        },
-        mode: {
-          type: "string",
-          enum: ["keyword", "smart", "hybrid"],
-          description:
-            "keyword with auto_expand is fastest. Use hybrid or smart for a deeper fallback when keyword expansion is not enough.",
-          default: "keyword",
-        },
-        auto_expand: {
-          type: "boolean",
-          description:
-            "Automatically expand vague queries with aliases, language variants, and punctuation variants before merging results.",
-          default: true,
-        },
-      },
-    },
-  },
-  {
-    name: "get_session",
-    description: "Read a matched session summary and selected message excerpts.",
-    inputSchema: {
-      type: "object",
-      required: ["thread_id"],
-      properties: {
-        thread_id: {
-          type: "string",
-          description: "Session UUID returned by search_sessions.",
-        },
-        query: {
-          type: "string",
-          description: "Optional query for selecting relevant excerpts from the session.",
-        },
-        max_messages: {
-          type: "integer",
-          description: "Maximum message excerpts to return.",
-          default: 24,
-        },
-      },
-    },
-  },
-];
 
 function utcNowMs() {
   return Date.now();
@@ -1108,117 +989,93 @@ async function callTool(name, args) {
   throw new Error(`Unknown tool: ${name}`);
 }
 
-function resultResponse(id, result) {
-  return { jsonrpc: "2.0", id, result };
+function toolResult(payload) {
+  return {
+    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
+  };
 }
 
-function errorResponse(id, code, message) {
-  return { jsonrpc: "2.0", id, error: { code, message } };
+function registerTools(server) {
+  server.registerTool(
+    "refresh_index",
+    {
+      description: "Scan local session files and refresh the searchable index.",
+      inputSchema: {
+        force: z.boolean().optional().default(false).describe("Reindex every session even if it appears unchanged."),
+      },
+    },
+    async ({ force }) => toolResult(await refreshIndex(Boolean(force))),
+  );
+
+  server.registerTool(
+    "search_sessions",
+    {
+      description:
+        "Search local sessions by remembered content and return links for going back to the original session.",
+      inputSchema: {
+        query: z.string().describe("Natural language, keyword, filename, project name, or phrase to search for."),
+        limit: z.number().int().min(1).max(50).optional().default(10).describe("Maximum results to return."),
+        include_archived: z.boolean().optional().default(true).describe("Include archived sessions."),
+        cwd_contains: z.string().optional().describe("Optional path substring filter for the session workspace."),
+        mode: z
+          .enum(["keyword", "smart", "hybrid"])
+          .optional()
+          .default("keyword")
+          .describe("keyword is exact local search. smart is no-key local concept search. hybrid combines both."),
+      },
+    },
+    async (args) => toolResult(await callTool("search_sessions", args)),
+  );
+
+  server.registerTool(
+    "search_many_sessions",
+    {
+      description: "Run multiple local query variants and merge high-recall session candidates for model reranking.",
+      inputSchema: {
+        queries: z.array(z.string()).describe("Several query variants generated from the user's fuzzy memory."),
+        limit_per_query: z.number().int().min(1).max(50).optional().default(12).describe("Maximum results per query variant."),
+        final_limit: z.number().int().min(1).max(100).optional().default(30).describe("Maximum merged candidates."),
+        include_archived: z.boolean().optional().default(true).describe("Include archived sessions."),
+        cwd_contains: z.string().optional().describe("Optional path substring filter for the session workspace."),
+        mode: z
+          .enum(["keyword", "smart", "hybrid"])
+          .optional()
+          .default("keyword")
+          .describe("keyword with auto_expand is fastest. Use hybrid or smart for a deeper fallback."),
+        auto_expand: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe("Automatically expand vague queries with aliases, language variants, and punctuation variants."),
+      },
+    },
+    async (args) => toolResult(await callTool("search_many_sessions", args)),
+  );
+
+  server.registerTool(
+    "get_session",
+    {
+      description: "Read a matched session summary and selected message excerpts.",
+      inputSchema: {
+        thread_id: z.string().describe("Session UUID returned by search_sessions."),
+        query: z.string().optional().describe("Optional query for selecting relevant excerpts from the session."),
+        max_messages: z.number().int().min(1).max(80).optional().default(24).describe("Maximum message excerpts to return."),
+      },
+    },
+    async (args) => toolResult(await callTool("get_session", args)),
+  );
 }
 
-async function handleRequest(request) {
-  const method = request?.method;
-  const requestId = request?.id;
-  const params = request?.params || {};
-  if (requestId === undefined || requestId === null) return null;
-
-  if (method === "initialize") {
-    return resultResponse(requestId, {
-      protocolVersion: params.protocolVersion || "2024-11-05",
-      capabilities: { tools: {} },
-      serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
-    });
-  }
-
-  if (method === "tools/list") return resultResponse(requestId, { tools: TOOLS });
-
-  if (method === "tools/call") {
-    try {
-      const payload = await callTool(params.name, params.arguments || {});
-      return resultResponse(requestId, {
-        content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
-        isError: false,
-      });
-    } catch (error) {
-      const stack = error?.stack || String(error);
-      return resultResponse(requestId, {
-        content: [{ type: "text", text: stack }],
-        isError: true,
-      });
-    }
-  }
-
-  return errorResponse(requestId, -32601, `Method not found: ${method}`);
+async function main() {
+  const server = new McpServer({
+    name: SERVER_NAME,
+    version: SERVER_VERSION,
+  });
+  registerTools(server);
+  await server.connect(new StdioServerTransport());
 }
 
-function writeMessage(message) {
-  const body = Buffer.from(JSON.stringify(message), "utf8");
-  process.stdout.write(`Content-Length: ${body.length}\r\n\r\n`);
-  process.stdout.write(body);
-}
-
-let inputBuffer = Buffer.alloc(0);
-let pending = Promise.resolve();
-
-function parseBufferedMessages() {
-  const messages = [];
-  while (inputBuffer.length) {
-    while (inputBuffer[0] === 10 || inputBuffer[0] === 13) {
-      inputBuffer = inputBuffer.slice(1);
-      if (!inputBuffer.length) return messages;
-    }
-
-    if (inputBuffer[0] === 123) {
-      const newline = inputBuffer.indexOf(10);
-      if (newline < 0) return messages;
-      const line = inputBuffer.slice(0, newline).toString("utf8").trim();
-      inputBuffer = inputBuffer.slice(newline + 1);
-      if (line) messages.push(JSON.parse(line));
-      continue;
-    }
-
-    let separator = Buffer.from("\r\n\r\n");
-    let headerEnd = inputBuffer.indexOf(separator);
-    let separatorLength = 4;
-    if (headerEnd < 0) {
-      separator = Buffer.from("\n\n");
-      headerEnd = inputBuffer.indexOf(separator);
-      separatorLength = 2;
-    }
-    if (headerEnd < 0) return messages;
-
-    const headers = inputBuffer.slice(0, headerEnd).toString("ascii");
-    const match = headers.match(/content-length:\s*(\d+)/i);
-    if (!match) throw new Error("Missing Content-Length header");
-    const length = Number.parseInt(match[1], 10);
-    const bodyStart = headerEnd + separatorLength;
-    const totalLength = bodyStart + length;
-    if (inputBuffer.length < totalLength) return messages;
-    const body = inputBuffer.slice(bodyStart, totalLength).toString("utf8");
-    inputBuffer = inputBuffer.slice(totalLength);
-    messages.push(JSON.parse(body));
-  }
-  return messages;
-}
-
-function enqueueRequest(request) {
-  pending = pending
-    .then(async () => {
-      const response = await handleRequest(request);
-      if (response) writeMessage(response);
-    })
-    .catch((error) => {
-      writeMessage(errorResponse(request?.id ?? null, -32603, error?.stack || String(error)));
-    });
-}
-
-process.stdin.on("data", (chunk) => {
-  inputBuffer = Buffer.concat([inputBuffer, chunk]);
-  try {
-    for (const message of parseBufferedMessages()) enqueueRequest(message);
-  } catch (error) {
-    writeMessage(errorResponse(null, -32700, error?.message || String(error)));
-  }
+main().catch((error) => {
+  console.error(error?.stack || error);
+  process.exit(1);
 });
-
-process.stdin.resume();

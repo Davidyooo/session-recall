@@ -15,4 +15,8 @@ if [ "$NODE_MAJOR" -lt 18 ]; then
   exit 1
 fi
 
+if [ ! -d node_modules/@modelcontextprotocol/sdk ] || [ ! -d node_modules/zod ]; then
+  npm install --omit=dev
+fi
+
 exec node "$PLUGIN_DIR/mcp/server.mjs"

@@ -23,8 +23,7 @@
       "command": "bash",
       "args": [
         "./scripts/start-mcp.sh"
-      ],
-      "startup_timeout_sec": 120
+      ]
     }
   }
 }
