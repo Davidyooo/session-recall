@@ -19,7 +19,7 @@ const ARCHIVED_ROOT = path.join(CODEX_HOME, "archived_sessions");
 const MAX_RECORD_TEXT = 6000;
 const MAX_SESSION_TEXT = 600000;
 const SERVER_NAME = "session-recall";
-const SERVER_VERSION = "0.3.0";
+const SERVER_VERSION = "0.3.1";
 const INDEX_REFRESH_TTL_MS = 60000;
 let lastIndexRefreshCheckMs = 0;
 
@@ -122,6 +122,10 @@ function cleanTitle(text, maxChars = 90) {
   const compact = compactText(text, maxChars + 30);
   if (compact.length <= maxChars) return compact;
   return `${compact.slice(0, maxChars - 3).trimEnd()}...`;
+}
+
+function markdownLinkLabel(text) {
+  return compactText(text || "Open session", 120).replace(/([\\[\]])/g, "\\$1");
 }
 
 function threadIdFromPath(filePath) {
@@ -796,6 +800,7 @@ async function searchSessions({
       thread_id: row.thread_id,
       title: row.title,
       result_label: cleanTitle(row.title, 80),
+      display_link: `[${markdownLinkLabel(cleanTitle(row.title, 80))}](codex://threads/${row.thread_id})`,
       cwd: row.cwd,
       project: projectFromCwd(row.cwd),
       archived: Boolean(row.archived),
@@ -813,9 +818,11 @@ async function searchSessions({
       matched_terms: matchedTerms,
       snippet: item.snippet,
       open_url: `codex://threads/${row.thread_id}`,
+      open_label: "Open session",
+      markdown_link: `[Open session](codex://threads/${row.thread_id})`,
       open_url_reliability:
-        "unreliable_from_assistant_markdown; prefer Codex internal thread navigation when available",
-      open_instruction: `Ask the assistant to open thread ${row.thread_id}.`,
+        "preferred_markdown_link; if link routing fails, use Codex internal thread navigation when available",
+      open_instruction: "Click the Markdown link or ask the assistant to open this result.",
       rollout_path: row.rollout_path,
     });
   }
@@ -826,7 +833,7 @@ async function searchSessions({
     count: results.length,
     results,
     note:
-      "Show thread_id and ask the user to reply with the result number or thread_id to open it. Avoid presenting codex://threads/<thread_id> as a Markdown link because it can route to a blank loading page in the desktop app. For vague memory, generate several query variants and use search_many_sessions.",
+      "Present the result title or open_label as a Markdown link using open_url. Do not display raw thread_id by default; keep it for troubleshooting or explicit user requests. For vague memory, generate several query variants and use search_many_sessions.",
   };
 }
 
@@ -942,15 +949,18 @@ async function getSession({ thread_id, query = null, max_messages = 24 }) {
   return {
     thread_id: row.thread_id,
     title: row.title,
+    display_link: `[${markdownLinkLabel(cleanTitle(row.title, 80))}](codex://threads/${row.thread_id})`,
     cwd: row.cwd,
     archived: Boolean(row.archived),
     created_at: fmtTime(Number(row.created_at_ms || 0)),
     updated_at: fmtTime(Number(row.updated_at_ms || 0)),
     message_count: row.message_count,
     open_url: `codex://threads/${row.thread_id}`,
+    open_label: "Open session",
+    markdown_link: `[Open session](codex://threads/${row.thread_id})`,
     open_url_reliability:
-      "unreliable_from_assistant_markdown; prefer Codex internal thread navigation when available",
-    open_instruction: `Ask the assistant to open thread ${row.thread_id}.`,
+      "preferred_markdown_link; if link routing fails, use Codex internal thread navigation when available",
+    open_instruction: "Click the Markdown link or ask the assistant to open this result.",
     rollout_path: row.rollout_path,
     messages: selected,
   };

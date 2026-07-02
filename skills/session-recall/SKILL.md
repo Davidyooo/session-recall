@@ -24,7 +24,7 @@ Use this skill when the user wants to find, recall, search, reopen, or inspect a
    - If the top candidates are close or ambiguous, call `get_session` for 2-4 candidates before answering.
 5. Show the top matches with title, updated time, workspace path when useful, archived status, why it matched, the returned snippet, and the thread id.
 6. If the user asks for more detail before opening, call `get_session` on the best matching `thread_id`.
-7. If the user asks to open one of the returned sessions, use the Codex thread navigation tool when it is available. Do not ask the user to click a `codex://threads/<thread_id>` Markdown link.
+7. If the user asks to open one of the returned sessions, use the Codex thread navigation tool when it is available. Search results should still include a clickable Markdown link built from `open_url` so the user can open the session directly.
 
 ## Semantic Recall Without Embeddings
 
@@ -46,23 +46,23 @@ For Chinese conversations, use this format:
 ```md
 我找到了 <N> 个可能相关的 session。最像的是第 <K> 个。
 
-1. <short title> · 线程ID：`<thread_id>`
+1. [<short title>](codex://threads/<thread_id>)
    时间：<updated time>
    状态/项目：<当前/已归档> · <workspace path or project name>
    为什么像：<one short reason, based on the original user intent and matched snippet>
    命中片段："<short snippet>"
-   打开方式：回复“打开第 <K> 个”，我会直接跳过去。
+   打开：点击标题，或回复“打开第 <K> 个”。
 ```
 
 Rules:
 
 - Localize labels and action text to the user's current language.
 - In Chinese, use `已归档` only when the result says `archived: true`; otherwise use `当前`.
-- Use `match_summary`, `matched_fields`, `matched_terms`, `confidence`, `project`, and `status` to explain results.
+- Use `display_link` when available. Otherwise use `match_summary`, `matched_fields`, `matched_terms`, `confidence`, `project`, `status`, and `open_url` to explain and link results.
 - If the title is very long, shorten it to a readable title, but keep the link target unchanged.
 - The "why it matched" line should be the assistant's semantic judgment, not just a raw score.
-- Do not show raw `score`, `keyword_score`, `smart_score`, `rollout_path`, or internal query variants unless the user asks.
-- Do not format `codex://threads/<thread_id>` as a Markdown action link. In the current desktop app this link can route to a blank loading page from assistant Markdown.
+- Do not show raw `score`, `keyword_score`, `smart_score`, `rollout_path`, `thread_id`, or internal query variants unless the user asks or you need it for troubleshooting.
+- Make the result title or an explicit "打开这个 session" label a Markdown link using `display_link` or `open_url`. Do not make the user copy a thread ID.
 - If results are weak or noisy, say that clearly and show the best 2-3 candidates.
 
 ## Privacy Boundary
