@@ -67,7 +67,7 @@ Rules:
 
 ## Privacy Boundary
 
-This plugin reads local session files and stores a local SQLite index under `$CODEX_HOME/session-recall/index.sqlite`. Do not upload session contents or use web search for the user's private history.
+This plugin reads local session files and stores a local JSONL index under `$CODEX_HOME/session-recall/index.jsonl`. Do not upload session contents or use web search for the user's private history.
 
 ## Limitations
 

@@ -1,0 +1,14 @@
+{
+  "name": "session-recall",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Local Codex plugin for finding old sessions by remembered content.",
+  "scripts": {
+    "mcp": "node ./mcp/server.mjs",
+    "check": "node --check ./mcp/server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
