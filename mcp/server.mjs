@@ -19,7 +19,7 @@ const ARCHIVED_ROOT = path.join(CODEX_HOME, "archived_sessions");
 const MAX_RECORD_TEXT = 6000;
 const MAX_SESSION_TEXT = 600000;
 const SERVER_NAME = "session-recall";
-const SERVER_VERSION = "0.3.1";
+const SERVER_VERSION = "0.3.2";
 const INDEX_REFRESH_TTL_MS = 60000;
 let lastIndexRefreshCheckMs = 0;
 
@@ -126,6 +126,50 @@ function cleanTitle(text, maxChars = 90) {
 
 function markdownLinkLabel(text) {
   return compactText(text || "Open session", 120).replace(/([\\[\]])/g, "\\$1");
+}
+
+function quoteSnippet(text) {
+  return compactText(text || "", 220).replace(/[“”]/g, '"');
+}
+
+function dateOnly(value) {
+  return String(value || "").slice(0, 10);
+}
+
+function statusZh(result) {
+  return result.archived ? "已归档" : "当前";
+}
+
+function whyRelevantZh(result, query) {
+  const title = cleanTitle(result.title || result.result_label || "", 80);
+  const queryText = compactText(query || "", 40);
+  if (title && queryText) {
+    return `这条讨论的是“${title}”，和你要找的“${queryText}”相关。`;
+  }
+  const terms = (result.matched_terms || []).filter(Boolean).slice(0, 3);
+  if (terms.length) {
+    return `这条内容命中了“${terms.join("、")}”，和这次搜索直接相关。`;
+  }
+  if (queryText) {
+    return `这条 session 的标题或内容与“${queryText}”相关。`;
+  }
+  return "这条 session 的标题或内容和你的搜索意图相关。";
+}
+
+function renderSearchResultsMarkdownZh(results, query) {
+  if (!results.length) {
+    return "我没有找到相关的 session。";
+  }
+  const lines = [`我找到了 ${results.length} 条可能相关的 session。点击标题可以打开。`, ""];
+  results.forEach((result, idx) => {
+    lines.push(`${idx + 1}. ${result.display_link}`);
+    lines.push(`   时间：${dateOnly(result.updated_at)}`);
+    lines.push(`   状态/项目：${statusZh(result)} · ${result.project || "未知项目"}`);
+    lines.push(`   为什么相关：${whyRelevantZh(result, query)}`);
+    lines.push(`   命中片段：“${quoteSnippet(result.snippet)}”`);
+    if (idx < results.length - 1) lines.push("");
+  });
+  return lines.join("\n");
 }
 
 function threadIdFromPath(filePath) {
@@ -832,8 +876,9 @@ async function searchSessions({
     mode: finalMode,
     count: results.length,
     results,
+    recommended_markdown_zh: renderSearchResultsMarkdownZh(results, query),
     note:
-      "Present the result title or open_label as a Markdown link using open_url. Do not display raw thread_id by default; keep it for troubleshooting or explicit user requests. For vague memory, generate several query variants and use search_many_sessions.",
+      "For Chinese answers, use recommended_markdown_zh as the fixed output template. Do not display raw thread_id, scores, rollout_path, or index-refresh status by default.",
   };
 }
 
@@ -900,13 +945,17 @@ async function searchManySessions({
     delete item._best_variant_score;
   }
   results.sort((a, b) => b.aggregate_score - a.aggregate_score || String(b.updated_at).localeCompare(String(a.updated_at)));
+  const finalResults = results.slice(0, mergedLimit);
+  const recommendedResults = finalResults.slice(0, Math.min(finalResults.length, 5));
   return {
     queries: cleanQueries,
     auto_expand,
     mode,
-    count: Math.min(results.length, mergedLimit),
-    results: results.slice(0, mergedLimit),
-    note: "These are high-recall candidates. Codex should semantically rerank them against the user's original intent before answering.",
+    count: finalResults.length,
+    results: finalResults,
+    recommended_markdown_zh: renderSearchResultsMarkdownZh(recommendedResults, cleanQueries[0] || ""),
+    recommended_markdown_count: recommendedResults.length,
+    note: "These are high-recall candidates. Codex should semantically rerank them against the user's original intent before answering, then use the same fixed result template. Do not display raw thread_id, scores, rollout_path, or index-refresh status by default.",
   };
 }
 
