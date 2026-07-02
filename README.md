@@ -130,6 +130,25 @@ Useful paths:
 - `skills/session-recall/SKILL.md`: assistant-facing workflow instructions.
 - `assets/`: logo and icon files used by the plugin UI.
 
+## Troubleshooting
+
+### MCP startup timed out
+
+If Codex reports that `session_recall` timed out during MCP startup, make sure your local Python is available and new enough:
+
+```bash
+python3 --version
+```
+
+Session Recall requires Python 3.10 or newer.
+
+The plugin already starts through `scripts/start-mcp.sh` and sets a longer MCP startup timeout. If your local session history is unusually large and Codex still times out, add this to your Codex config:
+
+```toml
+[mcp_servers.session_recall]
+startup_timeout_sec = 120
+```
+
 ## Limits
 
 - This is not embedding or vector search.

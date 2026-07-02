@@ -20,10 +20,11 @@
         }
       ],
       "cwd": ".",
-      "command": "python3",
+      "command": "bash",
       "args": [
-        "./scripts/session_recall_mcp.py"
-      ]
+        "./scripts/start-mcp.sh"
+      ],
+      "startup_timeout_sec": 120
     }
   }
 }
